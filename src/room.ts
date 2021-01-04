@@ -1,4 +1,5 @@
 class Room {
+    readonly id: string;
     readonly word: string;
     readonly hostId: string;
     private players: { [id: string]: string };
@@ -6,10 +7,12 @@ class Room {
     private numCorrectGuesses: number;
     
     /**
+     * @param id room code
      * @param word the word to be guessed
      * @param hostId id of the host player
      */
-    constructor(word: string, hostId: string) {
+    constructor(id: string, word: string, hostId: string) {
+        this.id = id;
         this.word = word;
         this.hostId = hostId;
         this.players = {};
@@ -87,4 +90,11 @@ class Room {
         return this.numCorrectGuesses == this.word.length;
     }
 
+    /**
+     * Gets the room id
+     * @return room id
+     */
+    getId(): string {
+        return this.id;
+    }
 }
