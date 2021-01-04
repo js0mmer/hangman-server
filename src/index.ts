@@ -47,7 +47,13 @@ io.on('connection', (socket: any) => {
     });
 
     socket.on('join_room', (id: string) => {
-        // TODO: handler username & adding player
+        socket.join(id); // connect client socket to room
+
+        socket.emit('word_length', rooms[id].getWordLength()) // send client the word length
+    });
+
+    socket.on('username', (name: string) => {
+        getRoomFromClient(socket).addPlayer(socket.id, name); // adds player to the room
     });
 
     socket.on('guess', (letter: string) => {

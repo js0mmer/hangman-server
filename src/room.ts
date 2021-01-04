@@ -97,4 +97,12 @@ class Room {
     getId(): string {
         return this.id;
     }
+
+    /**
+     * Gets the word length
+     * @return word length
+     */
+    getWordLength(): number {
+        return this.word.length;
+    }
 }
