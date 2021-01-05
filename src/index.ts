@@ -37,7 +37,6 @@ function getRoomFromClient(socket: Socket): Room {
 interface Guess {
     username: string,
     letter: string,
-    color: string,
     result?: boolean
 }
 
@@ -83,10 +82,11 @@ io.on('connection', (socket: Socket) => {
 
     socket.on('guess', (letter: string) => {
         let room = getRoomFromClient(socket);
+        let id = socket.id;
 
         if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
-        if (!room.isTurn(socket.id)) return; // if it's not the players turn, ignore
+        if (!room.isTurn(id)) return; // if it's not the players turn, ignore
         
         let result = undefined;
 
@@ -94,9 +94,7 @@ io.on('connection', (socket: Socket) => {
             result = room.guess(letter); // guess it and assign the result
         }
 
-        let color = 'red';
-
-        let guess: Guess = { username: room.getPlayerName(socket.id), letter, color, result }; // build guess response
+        let guess: Guess = { username: room.getPlayerName(id), letter, result }; // build guess response
         io.to(room.getId()).emit('guess', guess); // send guess response
 
         // TODO: notify next player of their turn

@@ -1,3 +1,5 @@
+import config from "./config";
+
 export default class Room {
     readonly id: string;
     readonly word: string;
@@ -91,7 +93,7 @@ export default class Room {
      * @return true if players ran out of guesses
      */
     isGameLost(): boolean {
-        return this.guesses.length >= 7;
+        return this.guesses.length >= config.maxGuesses;
     }
 
     /**
@@ -131,6 +133,12 @@ export default class Room {
      */
     startGame() {
         this.gameStarted = true;
+        // generate turn order
+        let i = 0;
+        for (var player in this.players) {
+            this.turnOrder.push(player);
+            i++;
+        }
     }
 
     /**
