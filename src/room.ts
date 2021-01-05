@@ -17,6 +17,7 @@ export default class Room {
     private gameStarted: boolean;
     private turnOrder: string[];
     private turn: number;
+    private numWrongGuesses: number;
     
     /**
      * @param id room code
@@ -34,6 +35,7 @@ export default class Room {
         this.gameStarted = false;
         this.turnOrder = [];
         this.turn = -1;
+        this.numWrongGuesses = 0;
     }
 
     /**
@@ -90,6 +92,7 @@ export default class Room {
             this.numCorrectGuesses++; // increment number of guesses
             return true;
         } else { // if not
+            this.numWrongGuesses++;
             return false;
         }
     }
@@ -99,7 +102,7 @@ export default class Room {
      * @return true if players ran out of guesses
      */
     isGameLost(): boolean {
-        return this.guesses.length >= config.maxGuesses;
+        return this.numWrongGuesses >= config.maxGuesses;
     }
 
     /**
