@@ -1,10 +1,14 @@
-class Room {
+export default class Room {
     readonly id: string;
     readonly word: string;
     readonly hostId: string;
+    private hostName;
     private players: { [id: string]: string };
     private guesses: string;
     private numCorrectGuesses: number;
+    private gameStarted: boolean;
+    private turnOrder: string[];
+    private turn: number;
     
     /**
      * @param id room code
@@ -15,9 +19,13 @@ class Room {
         this.id = id;
         this.word = word;
         this.hostId = hostId;
+        this.hostName = '';
         this.players = {};
         this.guesses = '';
         this.numCorrectGuesses = 0;
+        this.gameStarted = false;
+        this.turnOrder = [];
+        this.turn = 0;
     }
 
     /**
@@ -46,7 +54,11 @@ class Room {
      * @return Player name
      */
     getPlayerName(id: string): string {
-        return this.players[id];
+        if (id === this.hostId) {
+            return this.hostName;
+        } else {
+            return this.players[id];
+        }
     }
 
     /**
@@ -104,5 +116,59 @@ class Room {
      */
     getWordLength(): number {
         return this.word.length;
+    }
+
+    /**
+     * Determines if the game has started
+     * @return true if the game has started
+     */
+    hasStarted(): boolean {
+        return this.gameStarted;
+    }
+
+    /**
+     * Starts the game
+     */
+    startGame() {
+        this.gameStarted = true;
+    }
+
+    /**
+     * Sets the username of the host
+     * @param username
+     */
+    setHostName(username: string) {
+        this.hostName = username;
+    }
+
+    /**
+     * Moves to the next player's turn
+     * @return the player who's turn it is
+     */
+    nextTurn(): string {
+        this.turn++;
+
+        if (this.turnOrder.length) { // if the end of the array has been passed
+            this.turn = 0; // loop back to beginning
+        }
+
+        let nextTurnUser = this.turnOrder[this.turn];
+
+        if (this.players[nextTurnUser] == null) { // if that player is no longer in the game
+            this.nextTurn(); // next turn
+        } else {
+            return nextTurnUser;
+        }
+
+        return ''; // never reaches here but typescript mad
+    }
+
+    /**
+     * Determines if it is the player's turn
+     * @param id player id
+     * @return true or false 
+     */
+    isTurn(id: string): boolean {
+        return this.turnOrder[this.turn] === id;
     }
 }

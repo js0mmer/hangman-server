@@ -1,11 +1,12 @@
-import { RSA_PKCS1_PADDING } from 'constants';
 import http from 'http';
 import socketIO from 'socket.io';
+import { Socket } from 'socket.io';
+import Room from './room';
 
 const port = process.env.PORT || 4000;
 
 const server = http.createServer();
-const io = new socketIO.Server(server);
+const io = new socketIO.Server(server, { cors: { origin: 'http://localhost:3000', methods: ['GET', 'POST'] }});
 
 var rooms: { [id: string]: Room } = {}; // dictionary associating ids with rooms { id: Room }
 
@@ -25,18 +26,22 @@ function generateRoomId(): string {
  * @param socket The client socket
  * @return The room the client is in
  */
-function getRoomFromClient(socket: any): Room {
-    let socketRooms: { id: string, room: number } = socket.rooms;
-    return rooms[socketRooms.room];
+function getRoomFromClient(socket: Socket): Room {
+    console.log(socket.rooms);
+    let socketRooms = socket.rooms[Symbol.iterator]();
+    socketRooms.next();
+    let roomId = socketRooms.next().value;
+    return rooms[roomId];
 }
 
 interface Guess {
     username: string,
     letter: string,
+    color: string,
     result?: boolean
 }
 
-io.on('connection', (socket: any) => {
+io.on('connection', (socket: Socket) => {
     socket.on('create_room', (word: string) => {
         let id = generateRoomId();
         rooms[id] = new Room(id, word, socket.id); // create room and store it in dictioinary
@@ -47,21 +52,41 @@ io.on('connection', (socket: any) => {
     });
 
     socket.on('join_room', (id: string) => {
+        if (rooms[id].hasStarted()) {
+            socket.emit('already_started'); // don't let player join if it has already started
+            return;
+        }
+
         socket.join(id); // connect client socket to room
 
         socket.emit('word_length', rooms[id].getWordLength()) // send client the word length
     });
 
     socket.on('username', (name: string) => {
-        getRoomFromClient(socket).addPlayer(socket.id, name); // adds player to the room
+        let room = getRoomFromClient(socket);
+
+        if (room.hostId === socket.id) { // if this is the host
+            room.setHostName(name);
+            socket.emit('is_host');
+        } else {
+            room.addPlayer(socket.id, name); // adds player to the room
+        }
+    });
+
+    socket.on('start_game', () => {
+        let room = getRoomFromClient(socket);
+        if (room.hostId !== socket.id) return; // return if not host
+
+        io.to(room.id).emit('start_game'); // broadcast to clients that game has started
+        room.startGame();
     });
 
     socket.on('guess', (letter: string) => {
         let room = getRoomFromClient(socket);
 
-        if (room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended
+        if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
-        // TODO: keep track of turns
+        if (!room.isTurn(socket.id)) return; // if it's not the players turn, ignore
         
         let result = undefined;
 
@@ -69,7 +94,9 @@ io.on('connection', (socket: any) => {
             result = room.guess(letter); // guess it and assign the result
         }
 
-        let guess: Guess = { username: room.getPlayerName(socket.id), letter, result }; // build guess response
+        let color = 'red';
+
+        let guess: Guess = { username: room.getPlayerName(socket.id), letter, color, result }; // build guess response
         io.to(room.getId()).emit('guess', guess); // send guess response
 
         // TODO: notify next player of their turn
@@ -80,16 +107,27 @@ io.on('connection', (socket: any) => {
         } else if (room.isGameWon()) { // players correctly guessed word
             io.to(room.getId()).emit('win');
             // TODO: handle game end
+        } else { // neither, continue game and go to next player's turn
+            let nextTurnUser = room.nextTurn();
+            io.to(nextTurnUser).emit('is_turn'); // notifies user of their turn
         }
     });
 });
 
-io.on('disconnect', (socket: any) => {
-    let socketRooms: { id: string, room: number } = socket.rooms;
-    let room = rooms[socketRooms.room];
-    if (room.removePlayer(socketRooms.id)) { // remove player from room
-        delete rooms[socketRooms.room]; // delete room if it's empty
-    }
+io.on('disconnect', (socket: Socket) => {
+    // let socketRooms: { id: string, room: number } = socket.rooms;
+
+    // if (socketRooms.room == null) return; // if they never joined a room
+
+    // let room = rooms[socketRooms.room];
+
+    // if (room == null) return; // if the room is already deleted (host left)
+
+    // if (room.removePlayer(socketRooms.id)) { // remove player from room
+    //     delete rooms[socketRooms.room]; // delete room if it's empty
+    // } else if (room.hostId === socketRooms.id) { // if this is the host
+    //     delete rooms[socketRooms.room]; // delete room
+    // }
 });
 
-server.listen(port, () => `Listening on port ${port}`);
+server.listen(port, () => console.log(`Listening on port ${port}`));

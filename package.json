@@ -1,7 +1,7 @@
 {
   "name": "hangman-server",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "license": "MIT",
   "author": "Jacob Sommer <jacob.sommer@comcast.net>",
   "dependencies": {
@@ -14,6 +14,8 @@
     "typescript": "^4.1.3"
   },
   "scripts": {
-    "start": "node src/index.ts"
+    "build": "tsc",
+    "prestart": "yarn build",
+    "start": "node dist/index.js"
   }
 }
