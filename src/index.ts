@@ -1,7 +1,7 @@
 import http from 'http';
 import socketIO, { Socket } from 'socket.io';
 import { addRoom, deleteRoom, generateRoomId, getRoom, getRoomFromClient } from './manager';
-import Room from './room';
+import Room, { RoomStatus } from './room';
 
 const port = process.env.PORT || 4000;
 
@@ -21,24 +21,26 @@ io.on('connection', (socket: Socket) => {
     socket.on('join_room', (id: string) => {
         let room = getRoom(id);
 
-        if (room.hasStarted()) {
-            socket.emit('already_started'); // don't let player join if it has already started
-            return;
+        if (room == null) {
+            socket.emit('room_status', RoomStatus.INVALID);
+        } else if (room.hasStarted()) {
+            socket.emit('room_status', RoomStatus.STARTED); // don't let player join if it has already started
+        } else {
+            socket.emit('room_status', RoomStatus.OKAY);
         }
-
-        socket.join(id); // connect client socket to room
-
-        socket.emit('word_length', room.getWordLength()) // send client the word length
     });
 
-    socket.on('username', (name: string) => {
-        let room = getRoomFromClient(socket);
+    socket.on('username', (data: { roomId: string, name: string }) => {
+        let room = getRoom(data.roomId);
+
+        socket.emit('word_length', room.word.length) // send client the word length
 
         if (room.hostId === socket.id) { // if this is the host
-            room.setHostName(name);
+            room.setHostName(data.name);
             socket.emit('is_host');
         } else {
-            room.addPlayer(socket.id, name); // adds player to the room
+            socket.join(data.roomId); // connect client socket to room
+            room.addPlayer(socket.id, data.name); // adds player to the room
         }
     });
 
@@ -46,11 +48,15 @@ io.on('connection', (socket: Socket) => {
         let room = getRoomFromClient(socket);
         if (room.hostId !== socket.id) return; // return if not host
 
+        if (room.getPlayerCount() == 0) { // if no players
+            socket.emit('no_players');
+            return;
+        }
+
         io.to(room.id).emit('start_game'); // broadcast to clients that game has started
         room.startGame();
         let nextTurnUser = room.nextTurn();
-        if (room.getPlayerCount() == 1) return; // don't notify if only 1 player
-        io.to(nextTurnUser).emit('is_turn'); // notifies user of their turn
+        io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() == 1); // notifies user of their turn, second arg is so that there is no log if there's only 1 user
     });
 
     socket.on('guess', (letter: string) => {
@@ -67,12 +73,20 @@ io.on('connection', (socket: Socket) => {
             result = room.guess(letter); // guess it and assign the result
         }
 
+        let indices: number[] = [];
+
+        if (result) {
+            indices = room.getIndices(letter);
+            console.log(indices);
+        }
+
         let guess: {
             username: string,
             letter: string,
+            indices: number[],
             result?: boolean
-        } = { username: room.getPlayerName(id), letter, result }; // build guess response
-        let roomId = room.getId();
+        } = { username: room.getPlayerName(id), letter, indices, result }; // build guess response
+        let roomId = room.id;
 
         io.to(roomId).emit('guess', guess); // send guess response
 
@@ -88,25 +102,25 @@ io.on('connection', (socket: Socket) => {
             io.to(nextTurnUser).emit('is_turn'); // notifies user of their turn
         }
     });
-});
 
-io.on('disconnect', (socket: Socket) => {
-    let socketRooms = socket.rooms[Symbol.iterator]();
-    socketRooms.next();
-    if(socketRooms.next() == null) return; // if never joined a game
-
-    let room = getRoomFromClient(socket);
-
-    if (room == null) return; // if the room is already deleted (host left)
-
-    let roomId = room.getId();
-
-    if (room.removePlayer(socket.id)) { // remove player from room
-        deleteRoom(room.getId()); // delete room if it's empty
-    } else if (room.hostId === socket.id) { // if this is the hostId
-        socket.to(roomId).emit('kick'); // kick all players
-        deleteRoom(room.getId()); // delete room
-    }
+    socket.on('disconnect', () => {
+        // let socketRooms = socket.rooms[Symbol.iterator]();
+        // socketRooms.next();
+        // if(socketRooms.next() == null) return; // if never joined a game
+    
+        let room = getRoomFromClient(socket);
+    
+        if (room == null) return; // if the room is already deleted (host left)
+    
+        let roomId = room.id;
+    
+        if (room.removePlayer(socket.id)) { // remove player from room
+            deleteRoom(room.id); // delete room if it's empty
+        } else if (room.hostId === socket.id) { // if this is the hostId
+            socket.to(roomId).emit('kick'); // kick all players
+            deleteRoom(room.id); // delete room
+        }
+    });
 });
 
 server.listen(port, () => console.log(`Listening on port ${port}`));

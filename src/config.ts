@@ -1,4 +1,4 @@
 export default {
-    maxGuesses: 7,
+    maxGuesses: 6,
     maxPlayers: 8
 };

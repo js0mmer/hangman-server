@@ -1,5 +1,11 @@
 import config from './config';
 
+export enum RoomStatus {
+    STARTED = 'STARTED',
+    INVALID = 'INVALID',
+    OKAY = 'OKAY'
+}
+
 export default class Room {
     readonly id: string;
     readonly word: string;
@@ -101,23 +107,14 @@ export default class Room {
      * @return true if players guessed the whole word
      */
     isGameWon(): boolean {
-        return this.numCorrectGuesses == this.word.length;
-    }
-
-    /**
-     * Gets the room id
-     * @return room id
-     */
-    getId(): string {
-        return this.id;
-    }
-
-    /**
-     * Gets the word length
-     * @return word length
-     */
-    getWordLength(): number {
-        return this.word.length;
+        let uniqueLetters: string = '';
+        for (var i = 0; i < this.word.length; i++) {
+            let letter = this.word[i];
+            if (!uniqueLetters.includes(letter)) {
+                uniqueLetters += letter;
+            }
+        }
+        return this.numCorrectGuesses == uniqueLetters.length;
     }
 
     /**
@@ -151,7 +148,7 @@ export default class Room {
 
     /**
      * Moves to the next player's turn
-     * @return the player who's turn it is
+     * @return the id of the player who's turn it is
      */
     nextTurn(): string {
         this.turn++;
@@ -186,5 +183,21 @@ export default class Room {
      */
     getPlayerCount(): number {
         return Object.keys(this.players).length;
+    }
+
+    /**
+     * Get every index of the passed letter in the word
+     * @param letter
+     * @return number[] of indices
+     */
+    getIndices(letter: string): number[] {
+        let indices: number[] = [];
+        for(var i = 0; i < this.word.length; i++) {
+            if (this.word[i] === letter) {
+                indices.push(i);
+            }
+        }
+
+        return indices;
     }
 }
