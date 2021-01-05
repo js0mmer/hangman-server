@@ -1,6 +1,5 @@
 import http from 'http';
-import socketIO from 'socket.io';
-import { Socket } from 'socket.io';
+import socketIO, { Socket } from 'socket.io';
 import { addRoom, deleteRoom, generateRoomId, getRoom, getRoomFromClient } from './manager';
 import Room from './room';
 
