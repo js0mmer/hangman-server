@@ -6,7 +6,7 @@ import Room, { RoomStatus } from './room';
 const port = process.env.PORT || 4000;
 
 const server = http.createServer();
-const io = new socketIO.Server(server, { cors: { origin: 'http://localhost:3000', methods: ['GET', 'POST'] }});
+const io = new socketIO.Server(server, { cors: { origin: 'http://js0mmer.github.io/hangman', methods: ['GET', 'POST'] }});
 
 io.on('connection', (socket: Socket) => {
     socket.on('create_room', (word: string) => {
