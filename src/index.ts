@@ -121,6 +121,9 @@ io.on('connection', (socket: Socket) => {
         } else if (room.hostId === socket.id) { // if this is the hostId
             socket.to(roomId).emit('kick'); // kick all players
             deleteRoom(room.id); // delete room
+        } else if(room.isTurn(socket.id)) { // if it's there turn then go to next player's turn
+            let nextTurnUser = room.nextTurn();
+            io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() != 1);
         }
     });
 });
