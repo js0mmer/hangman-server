@@ -11,7 +11,7 @@ const io = new socketIO.Server(server, { cors: { origin: 'http://localhost:3000'
 io.on('connection', (socket: Socket) => {
     socket.on('create_room', (word: string) => {
         let id = generateRoomId();
-        addRoom(id, new Room(id, word, socket.id)); // create room and store it in dictioinary
+        addRoom(id, new Room(id, word.toLowerCase(), socket.id)); // create room and store it in dictioinary
 
         socket.join(id); // make the host join the socket room
 
@@ -62,6 +62,7 @@ io.on('connection', (socket: Socket) => {
     socket.on('guess', (letter: string) => {
         let room = getRoomFromClient(socket);
         let id = socket.id;
+        letter = letter.toLowerCase();
 
         if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
