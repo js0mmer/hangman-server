@@ -63,20 +63,22 @@ io.on('connection', (socket: Socket) => {
         let room = getRoomFromClient(socket);
         let id = socket.id;
 
+        let letterLower = letter.toLowerCase();
+
         if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
         if (!room.isTurn(id)) return; // if it's not the players turn, ignore
         
         let result = undefined;
 
-        if (!room.alreadyGuessed(letter)) { // if the letter was not already guessed
-            result = room.guess(letter); // guess it and assign the result
+        if (!room.alreadyGuessed(letterLower)) { // if the letter was not already guessed
+            result = room.guess(letterLower); // guess it and assign the result
         }
 
         let indices: number[] = [];
 
         if (result) {
-            indices = room.getIndices(letter);
+            indices = room.getIndices(letterLower);
             console.log(indices);
         }
 
