@@ -81,6 +81,7 @@ io.on('connection', (socket: Socket) => {
             deleteRoom(roomId);
         } else { // neither, continue game and go to next player's turn
             let nextTurnUser = room.nextTurn();
+            if (room.getPlayerCount() == 1) return; // don't notify if only 1 player
             io.to(nextTurnUser).emit('is_turn'); // notifies user of their turn
         }
     });

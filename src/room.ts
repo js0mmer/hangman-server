@@ -27,7 +27,7 @@ export default class Room {
         this.numCorrectGuesses = 0;
         this.gameStarted = false;
         this.turnOrder = [];
-        this.turn = 0;
+        this.turn = -1;
     }
 
     /**
@@ -156,7 +156,7 @@ export default class Room {
     nextTurn(): string {
         this.turn++;
 
-        if (this.turnOrder.length) { // if the end of the array has been passed
+        if (this.turn === this.turnOrder.length) { // if the end of the array has been passed
             this.turn = 0; // loop back to beginning
         }
 
@@ -178,5 +178,13 @@ export default class Room {
      */
     isTurn(id: string): boolean {
         return this.turnOrder[this.turn] === id;
+    }
+
+    /**
+     * Gets the player count
+     * @return player count
+     */
+    getPlayerCount(): number {
+        return Object.keys(this.players).length;
     }
 }
