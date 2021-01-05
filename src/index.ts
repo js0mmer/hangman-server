@@ -62,7 +62,6 @@ io.on('connection', (socket: Socket) => {
     socket.on('guess', (letter: string) => {
         let room = getRoomFromClient(socket);
         let id = socket.id;
-        letter = letter.toLowerCase();
 
         if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
