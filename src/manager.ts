@@ -1,7 +1,10 @@
 import { Socket } from 'socket.io';
 import Room from './room';
 
-var rooms: { [id: string]: Room } = {}; // dictionary associating ids with rooms { id: Room }
+/**
+ * Dictionary associating ids with rooms { id: Room }
+ */
+var rooms: { [id: string]: Room } = {};
 
 /**
  * @return 6-digit code from 100000-999999 as a string

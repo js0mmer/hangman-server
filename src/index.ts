@@ -56,7 +56,7 @@ io.on('connection', (socket: Socket) => {
         io.to(room.id).emit('start_game'); // broadcast to clients that game has started
         room.startGame();
         let nextTurnUser = room.nextTurn();
-        io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() == 1); // notifies user of their turn, second arg is so that there is no log if there's only 1 user
+        io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() != 1); // notifies user of their turn, second arg is so that there is no log if there's only 1 user
     });
 
     socket.on('guess', (letter: string) => {
@@ -98,10 +98,10 @@ io.on('connection', (socket: Socket) => {
         } else if (room.isGameWon()) { // players correctly guessed word
             io.to(roomId).emit('win');
             deleteRoom(roomId);
-        } else { // neither, continue game and go to next player's turn
+        } else if (result != null) { // neither, continue game and go to next player's turn if the guess is valid
+            socket.emit('turn_end'); // notify the user that their turn has ended
             let nextTurnUser = room.nextTurn();
-            if (room.getPlayerCount() == 1) return; // don't notify if only 1 player
-            io.to(nextTurnUser).emit('is_turn'); // notifies user of their turn
+            io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() != 1); // notifies user of their turn, only shows message if more than 1 player
         }
     });
 
