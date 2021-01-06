@@ -59,11 +59,11 @@ io.on('connection', (socket: Socket) => {
         io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() != 1); // notifies user of their turn, second arg is so that there is no log if there's only 1 user
     });
 
-    socket.on('guess', (letter: string) => {
+    socket.on('guess', (guess: string) => {
         let room = getRoomFromClient(socket);
         let id = socket.id;
 
-        let letterLower = letter.toLowerCase();
+        let guessLower = guess.toLowerCase();
 
         if (!room.hasStarted() || room.isGameLost() || room.isGameWon()) return; // make sure no guesses come in after the game has ended or before it's started
 
@@ -71,26 +71,26 @@ io.on('connection', (socket: Socket) => {
         
         let result = undefined;
 
-        if (!room.alreadyGuessed(letterLower)) { // if the letter was not already guessed
-            result = room.guess(letterLower); // guess it and assign the result
+        if (!room.alreadyGuessed(guessLower)) { // if the letter was not already guessed
+            result = room.guess(guessLower); // guess it and assign the result
         }
 
         let indices: number[] = [];
 
         if (result) {
-            indices = room.getIndices(letterLower);
+            indices = room.getIndices(guessLower);
             console.log(indices);
         }
 
-        let guess: {
+        let guessResponse: {
             username: string,
-            letter: string,
+            guess: string,
             indices: number[],
             result?: boolean
-        } = { username: room.getPlayerName(id), letter, indices, result }; // build guess response
+        } = { username: room.getPlayerName(id), guess, indices, result }; // build guess response
         let roomId = room.id;
 
-        io.to(roomId).emit('guess', guess); // send guess response
+        io.to(roomId).emit('guess', guessResponse); // send guess response
 
         if (room.isGameLost()) { // players ran out of guesses
             io.to(roomId).emit('lose');

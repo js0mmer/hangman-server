@@ -18,6 +18,7 @@ export default class Room {
     private turnOrder: string[];
     private turn: number;
     private numWrongGuesses: number;
+    private guessedWord: boolean;
     
     /**
      * @param id room code
@@ -36,6 +37,7 @@ export default class Room {
         this.turnOrder = [];
         this.turn = -1;
         this.numWrongGuesses = 0;
+        this.guessedWord = false;
     }
 
     /**
@@ -82,19 +84,30 @@ export default class Room {
 
     /**
      * Guesses a letter
-     * @param letter Guess
+     * @param guess Guess (letter or whole word)
      * @return true if guess was correct, false if not
      */
-    guess(letter: string): boolean {
-        this.guesses += letter; // add letter to guesses
-
-        if (this.word.includes(letter)) { // if the letter is in the word
-            this.numCorrectGuesses++; // increment number of guesses
-            return true;
-        } else { // if not
-            this.numWrongGuesses++;
-            return false;
+    guess(guess: string): boolean {
+        if (guess.length == 1) { // if letter
+            this.guesses += guess; // add letter to guesses
+    
+            if (this.word.includes(guess)) { // if the letter is in the word
+                this.numCorrectGuesses++; // increment number of guesses
+                return true;
+            } else { // if not
+                this.numWrongGuesses++;
+                return false;
+            }
+        } else { // if word
+            if (this.word === guess) {
+                this.guessedWord = true;
+                return true;
+            } else {
+                this.numWrongGuesses++;
+                return false;
+            }
         }
+
     }
 
     /**
@@ -110,6 +123,8 @@ export default class Room {
      * @return true if players guessed the whole word
      */
     isGameWon(): boolean {
+        if (this.guessedWord) return true;
+
         let uniqueLetters: string = '';
         for (var i = 0; i < this.word.length; i++) {
             let letter = this.word[i];
