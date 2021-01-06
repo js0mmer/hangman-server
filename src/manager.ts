@@ -24,7 +24,6 @@ export function generateRoomId(): string {
  * @return The room the client is in
  */
 export function getRoomFromClient(socket: Socket): Room {
-    console.log(socket.rooms);
     let socketRooms = socket.rooms[Symbol.iterator]();
     socketRooms.next();
     let roomId = socketRooms.next().value;

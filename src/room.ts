@@ -72,6 +72,19 @@ export default class Room {
             return this.players[id];
         }
     }
+    
+    /**
+     * Get the names of all players in the game
+     * @return string[] of all player names
+     */
+    getPlayerNames(): string[] {
+        let names = [this.hostName];
+        for (var player in Object.keys(this.players)) {
+            names.push(this.players[player]);
+        }
+
+        return names;
+    }
 
     /**
      * Determines if the letter was already guessed

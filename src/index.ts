@@ -6,6 +6,7 @@ import Room, { RoomStatus } from './room';
 const port = process.env.PORT || 4000;
 
 const server = http.createServer();
+
 const io = new socketIO.Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] }});
 
 io.on('connection', (socket: Socket) => {
@@ -40,7 +41,9 @@ io.on('connection', (socket: Socket) => {
             socket.emit('is_host');
         } else {
             socket.join(data.roomId); // connect client socket to room
+            socket.emit('player_list', room.getPlayerNames()); // notifies client of current players in the game
             room.addPlayer(socket.id, data.name); // adds player to the room
+            io.to(room.id).emit('player_join', room.getPlayerName(socket.id)); // notify other players of join
         }
     });
 
@@ -79,7 +82,6 @@ io.on('connection', (socket: Socket) => {
 
         if (result) {
             indices = room.getIndices(guessLower);
-            console.log(indices);
         }
 
         let guessResponse: {
@@ -105,23 +107,24 @@ io.on('connection', (socket: Socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
-        // let socketRooms = socket.rooms[Symbol.iterator]();
-        // socketRooms.next();
-        // if(socketRooms.next() == null) return; // if never joined a game
-    
+    socket.on('disconnecting', () => {
         let room = getRoomFromClient(socket);
+        let id = socket.id;
     
         if (room == null) return; // if the room is already deleted (host left)
     
         let roomId = room.id;
     
-        if (room.removePlayer(socket.id)) { // remove player from room
-            deleteRoom(room.id); // delete room if it's empty
-        } else if (room.hostId === socket.id) { // if this is the hostId
+         if (room.hostId === socket.id) { // if this is the hostId
             socket.to(roomId).emit('kick'); // kick all players
             deleteRoom(room.id); // delete room
-        } else if(room.isTurn(socket.id)) { // if it's there turn then go to next player's turn
+            return;
+        }
+
+        io.to(room.id).emit('player_leave', room.getPlayerName(id)); // notify other players of disconnect
+        room.removePlayer(id)
+
+        if (room.isTurn(id)) { // if it's there turn then go to next player's turn
             let nextTurnUser = room.nextTurn();
             io.to(nextTurnUser).emit('is_turn', room.getPlayerCount() != 1);
         }
